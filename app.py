@@ -17,6 +17,26 @@ def resource_path(relative_path):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.abspath("."), relative_path)
 
+# Função para dividir mensagens grandes em pedaços menores
+def dividir_mensagem(mensagem, limite_caracteres=4000):
+    """Divide a mensagem em partes menores, com no máximo limite_caracteres cada."""
+    return [mensagem[i:i+limite_caracteres] for i in range(0, len(mensagem), limite_caracteres)]
+
+def enviar_whatsapp_ultramsg(mensagem, destinatarios):
+    instance_id = "instance123340"
+    token = "wo8yary0bdrlo4xy"
+
+    for numero in destinatarios:
+        url = f"https://api.ultramsg.com/{instance_id}/messages/chat"
+        data = {
+            "token": token,
+            "to": numero,
+            "body": mensagem
+        }
+        response = requests.post(url, data=data)
+        print(f"Enviado para {numero}: {response.status_code} - {response.text}")
+
+
 # Caminho completo para a planilha original
 caminho_original = os.path.join(os.getcwd(), "PLANILHA COMRAS (MANUTENÇÃO-FERRAMENTARIA)-2025.xlsx")
 caminho_temp = os.path.join(tempfile.gettempdir(), "PLANILHA_COMRAS_TEMP.xlsx")
@@ -53,19 +73,27 @@ vencendo = df[
 print(f"\nTotal de pedidos vencendo nos próximos 5 dias: {len(vencendo)}")
 print(vencendo[["N° DA SOLICITAÇÃO", "PEDIDO", "DATA ENTREGA", "FORNEDOR DESIGNADO"]])
 
-mensagem_whatsapp = "Pedidos com vencimento nos proximos 5 dias:\n\n"
 
-if vencendo.empty:
-    mensagem_whatsapp += "Nenhum pedido com vencimento proximo encontrado."
-else:
-    for _, row in vencendo.iterrows():
-        mensagem_whatsapp += (
-            f"*Solicitação:* {row['N° DA SOLICITAÇÃO']}\n"
+   # Agrupar os pedidos por fornecedor
+for fornecedor, grupo in vencendo.groupby("FORNEDOR DESIGNADO"):
+    mensagem_whatsapp = f"Bom dia, {fornecedor}:\n\n Segue abaixo os pedidos com previsão de entrega nos próximos dias, poderia me confirmar se o prazo esta mantido?\n\n"
+    # Adicionar os pedidos para o fornecedor
+    for _, row in grupo.iterrows():
+         mensagem_whatsapp += (
             f"*Pedido:* {row['PEDIDO']}\n"
             f"*Item:* {row['DESCRIÇÃO DO ITEM']}\n"
-            f"*Entrega prevista:* {row['DATA ENTREGA'].strftime('%d/%m/%Y')}\n"
-            f"*Motivo:* {row['MOTIVO DE SOLICITAÇÃO']}\n\n"
-        )    
+            f"*Entrega prevista:* {row['DATA ENTREGA'].strftime('%d/%m/%Y')}\n\n"
+            )
+    mensagens_divididas = dividir_mensagem(mensagem_whatsapp)
+
+    # Enviar cada mensagem dividida
+    for msg in mensagens_divididas:
+        destinatarios = ["+5519996386684"] 
+        # Envia a mensagem via UltraMsg
+        enviar_whatsapp_ultramsg(msg, destinatarios)
+        print(f"Mensagem enviada com sucesso{fornecedor}.")
+
+
 # Exibe a mensagem formatada no console
 print("\nMensagem WhatsApp:\n")
 print(mensagem_whatsapp)
@@ -95,9 +123,6 @@ pdf.add_page()
 
 # Logo
 pdf.image(resource_path("logo_helptech.png"), x=10, y=5, w=80)
-
-
-
 
 
 # Titulo
@@ -179,7 +204,7 @@ pdf.output(pdf_path)
 # Dados direto no código 
 remetente = "enviaremails05@gmail.com"
 senha = "gfnw gzdi cuqk edkx"
-destinatario = "rebeca.dezotti@helptech.ind.br"
+destinatario = "gaahribeiro99@gmail.com"
 
 
 # Cria a mensagem
@@ -213,27 +238,4 @@ if os.path.exists(caminho_temp):
 
 if os.path.exists(pdf_path):
     os.remove(pdf_path)    
-
-
-def enviar_whatsapp_ultramsg(mensagem, destinatarios):
-    instance_id = "instance123340"
-    token = "wo8yary0bdrlo4xy"
-
-    for numero in destinatarios:
-        url = f"https://api.ultramsg.com/{instance_id}/messages/chat"
-        data = {
-            "token": token,
-            "to": numero,
-            "body": mensagem
-        }
-        response = requests.post(url, data=data)
-        print(f"Enviado para {numero}: {response.status_code} - {response.text}")
-
-destinatarios = [+5519996386684]
-
-# Envia mensagem via UltraMsg
-enviar_whatsapp_ultramsg(mensagem_whatsapp, destinatarios)
-print("Mensagem enviada via WhatsApp com sucesso!")
-
-
 
