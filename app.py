@@ -70,14 +70,21 @@ vencendo = df[
     (df["DATA ENTREGA"] >= hoje) &
     (df["DATA ENTREGA"] <= data_limite)
 ]
+
+vencendo_whatsapp = df[  
+    df["STATUS DO PEDIDO"].isin(["REALIZADO"]) &  
+    (df["DATA ENTREGA"] >= hoje) &
+    (df["DATA ENTREGA"] <= data_limite)
+]
+
 print(f"\nTotal de pedidos vencendo nos próximos 5 dias: {len(vencendo)}")
 print(vencendo[["N° DA SOLICITAÇÃO", "PEDIDO", "DATA ENTREGA", "FORNEDOR DESIGNADO"]])
 
 
    # Agrupar os pedidos por fornecedor
-for fornecedor, grupo in vencendo.groupby("FORNEDOR DESIGNADO"):
+for fornecedor, grupo in vencendo_whatsapp.groupby("FORNEDOR DESIGNADO"):
     mensagem_whatsapp = f"Bom dia, {fornecedor}:\n\n Segue abaixo os pedidos com previsão de entrega nos próximos dias, poderia me confirmar se o prazo esta mantido?\n\n"
-    # Adicionar os pedidos para o fornecedor
+   
     for _, row in grupo.iterrows():
          mensagem_whatsapp += (
             f"*Pedido:* {row['PEDIDO']}\n"
@@ -204,7 +211,7 @@ pdf.output(pdf_path)
 # Dados direto no código 
 remetente = "enviaremails05@gmail.com"
 senha = "gfnw gzdi cuqk edkx"
-destinatario = "gaahribeiro99@gmail.com"
+destinatario = "rebeca.dezotti@helptech.ind.br"
 
 
 # Cria a mensagem
