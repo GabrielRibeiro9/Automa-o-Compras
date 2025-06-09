@@ -47,7 +47,7 @@ if os.path.exists(caminho_original):
     print("Planilha copiada com sucesso.")
 else:
     print("Arquivo original nao encontrado")
-    exit() 
+    sys.exit() 
 
 # Le a planilha temporaria
 df = pd.read_excel(caminho_temp, sheet_name="Plan1") 
