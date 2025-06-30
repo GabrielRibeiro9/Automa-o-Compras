@@ -10,6 +10,73 @@ import pywhatkit as kit
 import requests
 import sys
 import tempfile
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+import time
+from selenium.webdriver.common.by import By 
+from selenium.webdriver.common.keys import Keys
+
+load_dotenv()
+
+# Obter o email e a senha a partir das variáveis de ambiente
+email = os.getenv('EMAIL')
+senha = os.getenv('SENHA')
+
+def verificar_ultramsg():
+# Configuração para rodar o Chrome em modo headless (sem janela)
+    chrome_options = Options()
+    chrome_options.add_argument('--headless')  # Rodar sem interface gráfica
+    chrome_options.add_argument('--no-sandbox')  # Para evitar problemas em alguns ambientes
+    chrome_options.add_argument('--disable-dev-shm-usage')
+
+# Inicializa o WebDriver para o Chrome
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+
+# Acesse o site do UltraMsg
+    driver.get('https://user.ultramsg.com/signin.php')
+
+ # Preencher o campo de E-mail
+    email_input = driver.find_element(By.CSS_SELECTOR, 'input[name="email"]')  # Identificado pelo 'name="email"'
+    email_input.send_keys(email)  # Enviar o email
+
+    # Preencher o campo de Senha
+    senha_input = driver.find_element(By.CSS_SELECTOR, 'input[name="password"]')  # Substitua pelo campo correto de senha
+    senha_input.send_keys(senha)  # Enviar a senha
+
+    # Clicar no botão de login 
+    login_button = driver.find_element(By.CSS_SELECTOR, 'button[name="signin"]')  # Identificado pelo 'name="signin"'
+    login_button.click()
+
+    time.sleep(3)
+
+    
+    try:
+        # Localize o elemento com o texto 'Parada'
+        media_body = driver.find_element(By.XPATH, "//div[contains(@class, 'media-body') and contains(text(), 'Parada')]")
+        media_body.click()
+        print("Clique no elemento 'Parada' realizado com sucesso.")
+            
+        # Espera a troca de aba e encontra o botão 'Estender Período'
+        time.sleep(2)  # Ajuste o tempo conforme necessário
+            
+        # Troca para a nova aba
+        driver.switch_to.window(driver.window_handles[1])  # Assume que a nova aba é a segunda
+            
+        # Localiza o botão "Estender o Período de Teste" usando o onclick
+        estender_button = driver.find_element(By.XPATH, "//button[contains(@onclick, 'extend_trial')]")
+        estender_button.click()
+        print("Período de teste estendido com sucesso.")
+
+    except Exception as e:
+        print(f"Erro ao clicar no elemento 'Parada' ou estender o período: {e}")
+
+    # Fechar o navegador
+    driver.quit()
+
+# Execute a função
+verificar_ultramsg()    
 
 def resource_path(relative_path):
     """Retorna o caminho absoluto, compatível com PyInstaller."""
@@ -34,12 +101,23 @@ def enviar_whatsapp_ultramsg(mensagem, destinatarios):
             "body": mensagem
         }
         response = requests.post(url, data=data)
-        print(f"Enviado para {numero}: {response.status_code} - {response.text}")
+        if response.status_code == 200:
+            print(f"Mensagem enviada para {numero}: {response.status_code} - {response.text}")
+        else:
+            print(f"Erro ao enviar para {numero}: {response.status_code} - {response.text}")
 
 
 # Caminho completo para a planilha original
-caminho_original = os.path.join(os.getcwd(), "PLANILHA COMRAS (MANUTENÇÃO-FERRAMENTARIA)-2025.xlsx")
+caminho_original = os.path.join(os.getcwd(), r"R:\Manutenção\PLANILHA COMRAS (MANUTENÇÃO-FERRAMENTARIA)-2025.xlsx")
 caminho_temp = os.path.join(tempfile.gettempdir(), "PLANILHA_COMRAS_TEMP.xlsx")
+
+# Verifica se o caminho existe
+if not os.path.exists(caminho_original):
+    print("Caminho não encontrado:", caminho_original)
+    sys.exit()
+
+# Se o caminho existir, prossiga normalmente
+shutil.copy(caminho_original, caminho_temp)
 
 # Verifica se o arquivo original possui copia
 if os.path.exists(caminho_original):
@@ -47,7 +125,7 @@ if os.path.exists(caminho_original):
     print("Planilha copiada com sucesso.")
 else:
     print("Arquivo original nao encontrado")
-    exit() 
+    sys.exit() 
 
 # Le a planilha temporaria
 df = pd.read_excel(caminho_temp, sheet_name="Plan1") 
@@ -87,9 +165,9 @@ for fornecedor, grupo in vencendo_whatsapp.groupby("FORNEDOR DESIGNADO"):
    
     for _, row in grupo.iterrows():
          mensagem_whatsapp += (
-            f"*Pedido:* {row['PEDIDO']}\n"
-            f"*Item:* {row['DESCRIÇÃO DO ITEM']}\n"
-            f"*Entrega prevista:* {row['DATA ENTREGA'].strftime('%d/%m/%Y')}\n\n"
+            f"Pedido: {row['PEDIDO']}\n"
+            f"Item: {row['DESCRIÇÃO DO ITEM']}\n"
+            f"Entrega prevista: {row['DATA ENTREGA'].strftime('%d/%m/%Y')}\n\n"
             )
     mensagens_divididas = dividir_mensagem(mensagem_whatsapp)
 
@@ -244,5 +322,4 @@ if os.path.exists(caminho_temp):
     os.remove(caminho_temp)
 
 if os.path.exists(pdf_path):
-    os.remove(pdf_path)    
-
+    os.remove(pdf_path)

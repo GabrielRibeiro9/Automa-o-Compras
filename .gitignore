@@ -1,0 +1,18 @@
+# Arquivos de credenciais e ambiente
+*.env
+
+# Pastas de build e distribuição do PyInstaller
+build/
+dist/
+
+# Pasta de backup
+Antigo/
+
+# Arquivos de dados e planilhas
+*.xlsx
+
+# Arquivos de cache do Python
+__pycache__/
+
+# Testes
+teste.py
